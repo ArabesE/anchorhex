@@ -14,24 +14,9 @@ AnchorHex is an original two-base connection & territory game played on a 10×10
 - The game ends when neither player has any legal move.
 - Scoring: area style = stones on board + empty cells reachable from your base by empty-only paths and not also reachable from the opponent's base.
 
-## Demo
+## Run Locally
 
-You can run it locally (see below) or deploy easily to GitHub Pages / Netlify / Vercel.
-
-### Deploy (GitHub Pages via Actions)
-
-1. Enable GitHub Pages (Settings → Pages → Build from `gh-pages` branch).
-2. Add a simple deploy script (example):
-
-```jsonc
-// package.json scripts excerpt
-"predeploy": "pnpm build",
-"deploy": "git subtree push --prefix dist origin gh-pages"
-```
-
-3. Or use an Action like `peaceiris/actions-gh-pages` after `pnpm build`.
-
-For Netlify / Vercel just point build to `pnpm build` and publish directory `dist`.
+You can run it locally (see below).
 
 ## Quick Start
 
@@ -72,32 +57,26 @@ pnpm test
 
 ## Backlog / Ideas
 
-Non-exhaustive list of things I might add later:
+Possible future tweaks:
 
 - Repetition / ko-like rule to prevent infinite cycles
-- Enhanced legality: allow moves that become survivable only after captures (current engine forbids pre-capture self-atari that would resolve)
+- Allow moves that only become survivable post-capture (currently disallowed)
 - Move log & simple coordinate notation
-- AI / heuristic opponent (e.g. Monte Carlo playouts or pattern heuristics)
-- Export / import game state (string notation or JSON)
-- Territory / reachability performance optimizations (memoize incremental diffs)
-- Accessibility & keyboard navigation per hex cell
-- Mobile layout & responsive sizing improvements
-
-Treat this as a personal sandbox; no PRs expected.
+- Simple AI / heuristic opponent
+- Export / import game state
+- Incremental reachability optimizations
+- Accessibility & keyboard navigation per hex
+- Mobile / small-screen layout polish
 
 ## Formatting & Linting
 
-Prettier + ESLint (flat config) are used. Run:
+Prettier + ESLint (flat config). Run:
 
 ```bash
 pnpm lint
 ```
 
 An `.editorconfig` file is included for basic editor consistency.
-
-## Contributing
-
-Not open for external contributions at this time.
 
 ## License
 
