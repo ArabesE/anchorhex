@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="public/vite.svg" height="70" alt="AnchorHex" />
-</p>
-
 # AnchorHex
 
 AnchorHex is an original two-base connection & territory game played on a 10×10 flat‑top hex grid. Built with **React + TypeScript + Vite**.
