@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* stylelint-disable at-rule-no-unknown */
+@layer base {
+  :root {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+  html,
+  body {
+    @apply h-full w-full scroll-smooth;
+  }
+  body {
+    @apply m-0 font-sans bg-neutral-100 text-neutral-900 antialiased;
+  }
+  a {
+    @apply font-medium text-blue-600 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500;
+  }
+  h1 {
+    @apply text-3xl font-bold leading-tight;
+  }
+  button {
+    @apply inline-flex items-center gap-1 rounded-lg border border-transparent bg-neutral-900 text-white text-sm font-medium px-4 py-2 transition-colors hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
+
+/* Fallbacks for editors/build steps that don't understand @apply (duplicated minimal styles) */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #f5f5f5;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+h1 {
+  font-size: 1.875rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button:hover {
+  background: #1e293b;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-700;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center rounded-lg bg-neutral-200 text-neutral-900 px-4 py-2 text-sm font-medium hover:bg-neutral-300 focus-visible:ring-2 focus-visible:ring-neutral-400;
+  }
+}
+
+@layer utilities {
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+/* stylelint-enable at-rule-no-unknown */
