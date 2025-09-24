@@ -177,6 +177,7 @@ export default function App() {
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [
     boardHash(makeInitialBoard()),
   ]);
+  const [hovered, setHovered] = useState<{ r: number; c: number } | null>(null);
   const [showReach, setShowReach] = useState<{
     white: boolean;
     black: boolean;
@@ -437,39 +438,73 @@ export default function App() {
                 const isBlackReach = blackStonesReach[r][c];
                 const isWhiteTerr = territoryMask.w[r][c];
                 const isBlackTerr = territoryMask.b[r][c];
+                const isHovered = hovered?.r === r && hovered?.c === c;
 
                 // base styling
                 const isWBase = v === WHITE_BASE;
                 const isBBase = v === BLACK_BASE;
 
-                // fill layers
-                let fill = "#f8fafc"; // base tile
-                if (showReach.territory && v === EMPTY) {
-                  if (isWhiteTerr) fill = "#e7f0ff"; // bluish
-                  else if (isBlackTerr) fill = "#ffe9e7"; // reddish
+                // Tile fill: consistent, no pale opacity differences
+                // Territory tint is independent of legality
+                let fill = "#f8fafc"; // neutral base tile
+                let fillOpacity = 1;
+
+                if (v === EMPTY) {
+                  const inWhiteTerr = showReach.territory && isWhiteTerr;
+                  const inBlackTerr = showReach.territory && isBlackTerr;
+                  if (inWhiteTerr) fill = "#dbeafe"; // blue-100
+                  else if (inBlackTerr) fill = "#ffe4e6"; // rose-100
+                  else fill = "#f8fafc";
                 }
 
-                const stroke = "#94a3b8";
-                const strokeWidth = 1.25;
+                let stroke = "#cbd5e1"; // slate-300 (default grid)
+                let strokeWidth = 1;
+
+                // Legal, not hovered: gentle accent to read as "enabled"
+                const isLegalIdle = v === EMPTY && isLegal && !gameOver;
+                if (isLegalIdle) {
+                  stroke = "#64748b"; // slate-500
+                  strokeWidth = 1.25;
+                }
+
+                // Illegal, not hovered: ensure visible on both blue/red territory fills
+                const isIllegalIdle = v === EMPTY && !isLegal;
+                if (isIllegalIdle) {
+                  stroke = "#cbd5e1"; // slate-300
+                  strokeWidth = 1;
+                }
+
+                // Hover emphasis
+                if (v === EMPTY && !gameOver && isHovered) {
+                  if (isLegal) {
+                    stroke = "#0f172a"; // slate-900 (near-black)
+                    strokeWidth = 1.7;
+                    // elevate legal on hover (slightly more saturated)
+                    if (fill === "#dbeafe") fill = "#bfdbfe"; // blue-200
+                    else if (fill === "#ffe4e6") fill = "#fecdd3"; // rose-200
+                    else if (fill === "#f8fafc") fill = "#e2e8f0"; // slate-200
+                    fillOpacity = 1;
+                  }
+                }
 
                 return (
                   <g key={`${r}-${c}`}>
                     <polygon
                       points={pts}
                       fill={fill}
+                      fillOpacity={fillOpacity}
                       stroke={stroke}
                       strokeWidth={strokeWidth}
                       onClick={() => tryPlace(r, c)}
+                      onMouseEnter={() => setHovered({ r, c })}
+                      onMouseLeave={() =>
+                        setHovered((h) => (h && h.r === r && h.c === c ? null : h))
+                      }
                       style={{
                         cursor:
                           v === EMPTY && isLegal && !gameOver ? "pointer" : "default",
                       }}
                     />
-
-                    {/* legal move dot */}
-                    {v === EMPTY && isLegal && !gameOver && (
-                      <circle cx={x} cy={y} r={5} fill="#10b981" opacity={0.9} />
-                    )}
 
                     {/* reach overlays */}
                     {showReach.white && isWhiteReach && (

@@ -1,7 +1,7 @@
 // Core game engine logic for AnchorHex (no React / DOM), enabling unit tests.
 
-export const ROWS = 10;
-export const COLS = 10;
+export const ROWS = 8;
+export const COLS = 8;
 
 export const EMPTY = 0 as const;
 export const WHITE_STONE = 1 as const;
@@ -13,7 +13,7 @@ export type Cell = 0 | 1 | 2 | 3 | 4;
 export type Player = "BLACK" | "WHITE";
 
 export const WHITE_BASE_POS = { r: 0, c: 4 } as const;
-export const BLACK_BASE_POS = { r: ROWS - 1, c: 5 } as const;
+export const BLACK_BASE_POS = { r: ROWS - 1, c: 3 } as const;
 
 export function cloneBoard(b: Cell[][]): Cell[][] {
   return b.map((row) => row.slice());

@@ -1,6 +1,6 @@
 # AnchorHex
 
-AnchorHex is an original two-base connection & territory game played on a 10×10 flat‑top hex grid. Built with **React + TypeScript + Vite**.
+AnchorHex is an original two-base connection & territory game played on a 8×8 flat‑top hex grid. Built with **React + TypeScript + Vite**.
 
 ## Gameplay Summary
 
