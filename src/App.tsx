@@ -40,6 +40,100 @@ import type { Cell, Player } from "./game/engine";
 
 const START_PLAYER: Player = "BLACK"; // Black plays first by default
 
+type Lang = "en" | "zh";
+
+const translations = {
+  en: {
+    pass: "Pass",
+    passTitleHasMoves: "You have legal moves",
+    passTitleNoMoves: "Pass (no legal moves)",
+    undo: "Undo",
+    undoTitle: "Undo (U)",
+    restart: "Restart",
+    restartTitle: "Restart (R)",
+    moveHash: "Move #",
+    moveLabel: (n: number) => `Move #${n}`,
+    turn: "Turn:",
+    chooseHighlighted: "— choose a highlighted cell",
+    noLegal: "— no legal moves",
+    showWhiteReach: "Show WHITE reach (stones+empties)",
+    showBlackReach: "Show BLACK reach (stones+empties)",
+    showTerritory: "Show territory (empty-only reach)",
+    rulesTitle: "Rules",
+    rules: [
+      "On your turn, place a stone on any highlighted empty cell (those are the cells that can survive).",
+      "A stone survives if it can connect to its base via a path of your stones and empty cells.",
+      "After every move, all dead stones for both sides are removed automatically.",
+      "The game ends when neither side has any legal move.",
+      "Scoring uses area-style: stones + empty territory reachable from your base by empty-only paths and not from the opponent's base.",
+    ],
+    tipsTitle: "Tips",
+    tips: [
+      "Use Undo to rethink (keyboard: U), Restart to begin anew (R).",
+      "Toggle overlays to understand connectivity and territory formation.",
+      "The highlighted legal cells come from reachability to your base across empty cells and your stones.",
+    ],
+    gameOverWhite: (w: number, b: number) => `Game Over — White wins ${w} : ${b}`,
+    gameOverBlack: (w: number, b: number) => `Game Over — Black wins ${b} : ${w}`,
+    gameOverDraw: (w: number, b: number) => `Game Over — Draw ${w} : ${b}`,
+    newGame: "New Game",
+    inspect: "Inspect Board",
+    whiteScore: "White score:",
+    blackScore: "Black score:",
+    stones: "stones",
+    territory: "territory",
+    white: "WHITE",
+    black: "BLACK",
+    langToggle: "中文",
+    langToggleTitle: "Switch language",
+  },
+  zh: {
+    pass: "过手",
+    passTitleHasMoves: "当前有合法落子",
+    passTitleNoMoves: "过手（无合法落子）",
+    undo: "撤销",
+    undoTitle: "撤销 (U)",
+    restart: "重新开始",
+    restartTitle: "重新开始 (R)",
+    movePrefix: "第",
+    moveSuffix: "手",
+    moveLabel: (n: number) => `第${n}手`,
+    turn: "轮到：",
+    chooseHighlighted: "— 选择高亮的格子",
+    noLegal: "— 无合法落子",
+    showWhiteReach: "显示 白方 连通（棋子+空位）",
+    showBlackReach: "显示 黑方 连通（棋子+空位）",
+    showTerritory: "显示 地盘（仅空位连通）",
+    rulesTitle: "规则",
+    rules: [
+      "轮到你时，在任意高亮的空格落子（这些是可以存活的点）。",
+      "若一枚棋子能通过你方棋子与空位的路径连接到你的基地，则它存活。",
+      "每一步之后，双方所有不再连到各自基地的棋子会被移除。",
+      "当双方都没有合法落子时，对局结束。",
+      "计分采用地盘计分：得分 = 棋子数 + 仅从你的基地出发经空位可达且对手不可达的空位数。",
+    ],
+    tipsTitle: "提示",
+    tips: [
+      "使用 撤销 重新思考（快捷键 U），使用 重新开始 开启新对局（快捷键 R）。",
+      "切换覆盖层以理解连通与地盘的形成。",
+      "高亮的合法点来自：通过空位与己方棋子连接到你的基地的可达性。",
+    ],
+    gameOverWhite: (w: number, b: number) => `对局结束 — 白方胜 ${w} : ${b}`,
+    gameOverBlack: (w: number, b: number) => `对局结束 — 黑方胜 ${b} : ${w}`,
+    gameOverDraw: (w: number, b: number) => `对局结束 — 平局 ${w} : ${b}`,
+    newGame: "新对局",
+    inspect: "查看棋局",
+    whiteScore: "白方得分：",
+    blackScore: "黑方得分：",
+    stones: "棋子",
+    territory: "地盘",
+    white: "白方",
+    black: "黑方",
+    langToggle: "EN",
+    langToggleTitle: "切换语言",
+  },
+} as const;
+
 // Hex layout (flat-top) sizing
 const HEX_R = 26; // radius
 const HEX_W = HEX_R * 2;
@@ -75,6 +169,7 @@ type Snapshot = {
 };
 
 export default function App() {
+  const [lang, setLang] = useState<Lang>("en");
   const [board, setBoard] = useState<Cell[][]>(() => makeInitialBoard());
   const [player, setPlayer] = useState<Player>(START_PLAYER);
   const [move, setMove] = useState(1);
@@ -133,6 +228,11 @@ export default function App() {
   }, [board, whiteEmptyReach, blackEmptyReach]);
 
   const areaScore = useMemo(() => computeAreaScore(board), [board]);
+  const tr = translations[lang];
+
+  useEffect(() => {
+    document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+  }, [lang]);
 
   // Dimensions for SVG
   const width = MARGIN * 2 + (COLS - 1) * (HEX_W * 0.75) + HEX_W;
@@ -230,12 +330,15 @@ export default function App() {
   const winnerText = useMemo(() => {
     if (!gameOver) return "";
     const { white, black } = areaScore;
-    if (white > black) return `Game Over — White wins ${white} : ${black}`;
-    if (black > white) return `Game Over — Black wins ${black} : ${white}`;
-    return `Game Over — Draw ${white} : ${black}`;
-  }, [gameOver, areaScore]);
+    if (white > black) return tr.gameOverWhite(white, black);
+    if (black > white) return tr.gameOverBlack(white, black);
+    return tr.gameOverDraw(white, black);
+  }, [gameOver, areaScore, tr]);
 
   const canPass = useMemo(() => !anyLegal && !gameOver, [anyLegal, gameOver]);
+  const playerLabel = player === "WHITE" ? tr.white : tr.black;
+  const moveLabel = useMemo(() => tr.moveLabel(move), [tr, move]);
+  const isZh = lang === "zh";
 
   return (
     <div className="min-h-screen w-full bg-neutral-100 text-neutral-900 flex flex-col items-center py-6">
@@ -253,32 +356,41 @@ export default function App() {
               }
               onClick={onPass}
               disabled={!canPass}
-              title={anyLegal ? "You have legal moves" : "Pass (no legal moves)"}
+              title={anyLegal ? tr.passTitleHasMoves : tr.passTitleNoMoves}
             >
-              Pass
+              {tr.pass}
             </button>
             <button
               className="px-3 py-1.5 rounded-xl bg-neutral-700 text-white hover:bg-neutral-800 shadow-sm"
               onClick={undo}
-              title="Undo (U)"
+              title={tr.undoTitle}
             >
-              Undo
+              {tr.undo}
             </button>
             <button
               className="px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
               onClick={onRestart}
-              title="Restart (R)"
+              title={tr.restartTitle}
             >
-              Restart
+              {tr.restart}
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 shadow-sm"
+              onClick={() => setLang((l) => (l === "en" ? "zh" : "en"))}
+              title={tr.langToggleTitle}
+              aria-label={tr.langToggleTitle}
+            >
+              <span className={isZh ? "font-semibold" : "text-neutral-400"}>中文</span>
+              <span className="mx-1 text-neutral-400">/</span>
+              <span className={isZh ? "text-neutral-400" : "font-semibold"}>EN</span>
             </button>
           </div>
         </header>
 
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <span className="text-sm text-neutral-600">Move #{move}</span>
+          <span className="text-sm text-neutral-600">{moveLabel}</span>
           <span className="text-sm">
-            Turn: <b>{player}</b>{" "}
-            {anyLegal ? "— choose a highlighted cell" : "— no legal moves"}
+            {tr.turn} <b>{playerLabel}</b> {anyLegal ? tr.chooseHighlighted : tr.noLegal}
           </span>
         </div>
 
@@ -289,7 +401,7 @@ export default function App() {
               checked={showReach.white}
               onChange={(e) => setShowReach((s) => ({ ...s, white: e.target.checked }))}
             />
-            Show WHITE reach (stones+empties)
+            {tr.showWhiteReach}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -297,7 +409,7 @@ export default function App() {
               checked={showReach.black}
               onChange={(e) => setShowReach((s) => ({ ...s, black: e.target.checked }))}
             />
-            Show BLACK reach (stones+empties)
+            {tr.showBlackReach}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -307,7 +419,7 @@ export default function App() {
                 setShowReach((s) => ({ ...s, territory: e.target.checked }))
               }
             />
-            Show territory (empty-only reach)
+            {tr.showTerritory}
           </label>
         </div>
 
@@ -427,12 +539,14 @@ export default function App() {
                 <div className="text-lg font-semibold mb-2">{winnerText}</div>
                 <div className="text-sm text-neutral-700">
                   <div>
-                    White score: <b>{areaScore.white}</b> (stones{" "}
-                    {areaScore.breakdown.wStones} + territory {areaScore.breakdown.wTerr})
+                    {tr.whiteScore} <b>{areaScore.white}</b> ({tr.stones}{" "}
+                    {areaScore.breakdown.wStones} + {tr.territory}{" "}
+                    {areaScore.breakdown.wTerr})
                   </div>
                   <div>
-                    Black score: <b>{areaScore.black}</b> (stones{" "}
-                    {areaScore.breakdown.bStones} + territory {areaScore.breakdown.bTerr})
+                    {tr.blackScore} <b>{areaScore.black}</b> ({tr.stones}{" "}
+                    {areaScore.breakdown.bStones} + {tr.territory}{" "}
+                    {areaScore.breakdown.bTerr})
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2 justify-center">
@@ -440,13 +554,13 @@ export default function App() {
                     className="px-3 py-1.5 rounded-xl bg-neutral-900 text-white"
                     onClick={onRestart}
                   >
-                    New Game
+                    {tr.newGame}
                   </button>
                   <button
                     className="px-3 py-1.5 rounded-xl bg-neutral-200"
                     onClick={() => setGameOver(false)}
                   >
-                    Inspect Board
+                    {tr.inspect}
                   </button>
                 </div>
               </div>
@@ -456,39 +570,19 @@ export default function App() {
 
         <section className="mt-4 grid sm:grid-cols-2 gap-4">
           <div className="p-3 rounded-xl bg-white border text-sm leading-relaxed">
-            <h2 className="font-semibold mb-1">Rules (implemented)</h2>
+            <h2 className="font-semibold mb-1">{tr.rulesTitle}</h2>
             <ul className="list-disc pl-5 space-y-1">
-              <li>
-                On your turn, place a stone on any <b>highlighted</b> empty cell (those
-                are the cells that can survive).
-              </li>
-              <li>
-                A stone survives if it can connect to its base via a path of your stones
-                and empty cells.
-              </li>
-              <li>
-                After every move, all dead stones for both sides are removed
-                automatically.
-              </li>
-              <li>The game ends when neither side has any legal move.</li>
-              <li>
-                Scoring uses area-style: stones + empty territory reachable from your base
-                by empty-only paths and not from the opponent's base.
-              </li>
+              {tr.rules.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
             </ul>
           </div>
           <div className="p-3 rounded-xl bg-white border text-sm leading-relaxed">
-            <h2 className="font-semibold mb-1">Tips</h2>
+            <h2 className="font-semibold mb-1">{tr.tipsTitle}</h2>
             <ul className="list-disc pl-5 space-y-1">
-              <li>
-                Use <b>Undo</b> to rethink (keyboard: <kbd>U</kbd>), <b>Restart</b> to
-                begin anew (<kbd>R</kbd>).
-              </li>
-              <li>Toggle overlays to understand connectivity and territory formation.</li>
-              <li>
-                The highlighted legal cells come from reachability to your base across
-                empty cells and your stones.
-              </li>
+              {tr.tips.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
             </ul>
           </div>
         </section>
