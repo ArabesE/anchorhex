@@ -12,9 +12,9 @@ import {
   bfsFromBase,
   computeAreaScore,
   bothNoMoves,
-  resolveCaptures,
-  playerStone,
   cloneBoard,
+  boardHash,
+  placeStone,
 } from "./game/engine";
 
 /**
@@ -80,6 +80,9 @@ export default function App() {
   const [player, setPlayer] = useState<Player>(START_PLAYER);
   const [move, setMove] = useState(1);
   const [, setHistory] = useState<Snapshot[]>([]);
+  const [positionHistory, setPositionHistory] = useState<string[]>(() => [
+    boardHash(makeInitialBoard()),
+  ]);
   const [showReach, setShowReach] = useState<{
     white: boolean;
     black: boolean;
@@ -87,8 +90,13 @@ export default function App() {
   }>({ white: false, black: false, territory: true });
   const [gameOver, setGameOver] = useState(false);
 
+  const forbidSet = useMemo(() => new Set(positionHistory), [positionHistory]);
+
   // Legal move mask for current player
-  const legalMask = useMemo(() => computeLegalMoves(board, player), [board, player]);
+  const legalMask = useMemo(
+    () => computeLegalMoves(board, player, { forbidPositions: forbidSet }),
+    [board, player, forbidSet],
+  );
 
   const anyLegal = useMemo(() => legalMask.some((row) => row.some(Boolean)), [legalMask]);
 
@@ -136,10 +144,12 @@ export default function App() {
   }, [board, player, move]);
 
   const onRestart = useCallback(() => {
-    setBoard(makeInitialBoard());
+    const ib = makeInitialBoard();
+    setBoard(ib);
     setPlayer(START_PLAYER);
     setMove(1);
     setHistory([]);
+    setPositionHistory([boardHash(ib)]);
     setGameOver(false);
   }, []);
 
@@ -150,6 +160,7 @@ export default function App() {
       setBoard(cloneBoard(last.board));
       setPlayer(last.player);
       setMove(last.move);
+      setPositionHistory((ph) => (ph.length > 1 ? ph.slice(0, -1) : ph));
       setGameOver(false);
       return h.slice(0, -1);
     });
@@ -165,16 +176,15 @@ export default function App() {
 
       pushHistory();
 
-      const next = cloneBoard(board);
-      next[r][c] = playerStone(player);
-
-      // resolve captures
-      const resolved = resolveCaptures(next);
+      // Use engine placement with superko checking
+      const resolved = placeStone(board, player, r, c, { forbidPositions: forbidSet });
+      if (!resolved) return; // move illegal due to repetition
 
       setBoard(resolved);
       const nextPlayer: Player = player === "WHITE" ? "BLACK" : "WHITE";
       setPlayer(nextPlayer);
       setMove((m) => m + 1);
+      setPositionHistory((ph) => [...ph, boardHash(resolved)]);
 
       // Check end condition after state updates (microtask)
       setTimeout(() => {
@@ -182,7 +192,7 @@ export default function App() {
         if (ended) setGameOver(true);
       }, 0);
     },
-    [board, player, legalMask, pushHistory, gameOver],
+    [board, player, legalMask, pushHistory, gameOver, forbidSet],
   );
 
   // Keyboard shortcuts
@@ -210,10 +220,6 @@ export default function App() {
         <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">AnchorHex</h1>
-            <p className="text-sm text-neutral-600">
-              10×10 flat-top hex grid. Black moves first. Bases: White (0,5th col), Black
-              (last row, 6th col).
-            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button

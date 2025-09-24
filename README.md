@@ -55,8 +55,6 @@ pnpm test
 
 Possible future tweaks:
 
-- Repetition / ko-like rule to prevent infinite cycles
-- Allow moves that only become survivable post-capture (currently disallowed)
 - Move log & simple coordinate notation
 - Simple AI / heuristic opponent
 - Export / import game state

@@ -21,7 +21,7 @@ export function cloneBoard(b: Cell[][]): Cell[][] {
 
 export function makeInitialBoard(): Cell[][] {
   const board: Cell[][] = Array.from({ length: ROWS }, () =>
-    Array<Cell>(COLS).fill(EMPTY)
+    Array<Cell>(COLS).fill(EMPTY),
   );
   board[WHITE_BASE_POS.r][WHITE_BASE_POS.c] = WHITE_BASE;
   board[BLACK_BASE_POS.r][BLACK_BASE_POS.c] = BLACK_BASE;
@@ -72,7 +72,7 @@ export function playerBasePos(p: Player) {
 export function bfsFromBase(
   board: Cell[][],
   player: Player,
-  mode: "stones+empties" | "emptiesOnly"
+  mode: "stones+empties" | "emptiesOnly",
 ): boolean[][] {
   const vis = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
   const q: Array<[number, number]> = [];
@@ -103,10 +103,50 @@ export function bfsFromBase(
 
 export function computeLegalMoves(
   board: Cell[][],
-  player: Player
+  player: Player,
+  opts?: { forbidPositions?: ReadonlySet<string> },
 ): boolean[][] {
   const reach = bfsFromBase(board, player, "stones+empties");
-  return reach.map((row, r) => row.map((ok, c) => ok && board[r][c] === EMPTY));
+  const legal = reach.map((row, r) => row.map((ok, c) => ok && board[r][c] === EMPTY));
+
+  // Allow capture-based placements: if a move is not reachable now but
+  // after placing and resolving captures the placed stone survives
+  // (i.e., remains connected to its base), then it is legal.
+  const myStone = playerStone(player);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c] !== EMPTY) continue;
+      if (!legal[r][c]) {
+        const tmp = cloneBoard(board);
+        tmp[r][c] = myStone;
+        const after = resolveCaptures(tmp);
+        if (after[r][c] === myStone) {
+          legal[r][c] = true;
+        }
+      }
+
+      // Superko filter: if resulting board equals a forbidden position, mark illegal
+      if (legal[r][c] && opts?.forbidPositions) {
+        const tmp2 = cloneBoard(board);
+        tmp2[r][c] = myStone;
+        const after2 = resolveCaptures(tmp2);
+        if (opts.forbidPositions.has(boardHash(after2))) {
+          legal[r][c] = false;
+        }
+      }
+    }
+  }
+
+  return legal;
+}
+
+export function boardHash(board: Cell[][]): string {
+  let out = "";
+  for (let r = 0; r < ROWS; r++) {
+    if (r) out += "|";
+    for (let c = 0; c < COLS; c++) out += board[r][c];
+  }
+  return out;
 }
 
 export function resolveCaptures(board: Cell[][]): Cell[][] {
@@ -151,8 +191,7 @@ export function computeAreaScore(board: Cell[][]) {
 export function bothNoMoves(board: Cell[][]) {
   const any = (mask: boolean[][]) => mask.some((row) => row.some(Boolean));
   return (
-    !any(computeLegalMoves(board, "WHITE")) &&
-    !any(computeLegalMoves(board, "BLACK"))
+    !any(computeLegalMoves(board, "WHITE")) && !any(computeLegalMoves(board, "BLACK"))
   );
 }
 
@@ -160,14 +199,19 @@ export function placeStone(
   board: Cell[][],
   player: Player,
   r: number,
-  c: number
+  c: number,
+  opts?: { forbidPositions?: ReadonlySet<string> },
 ) {
   if (board[r][c] !== EMPTY) return null;
   const legal = computeLegalMoves(board, player);
   if (!legal[r][c]) return null;
   const next = cloneBoard(board);
   next[r][c] = playerStone(player);
-  return resolveCaptures(next);
+  const resolved = resolveCaptures(next);
+  if (opts?.forbidPositions && opts.forbidPositions.has(boardHash(resolved))) {
+    return null;
+  }
+  return resolved;
 }
 
 export type AreaScore = ReturnType<typeof computeAreaScore>;
