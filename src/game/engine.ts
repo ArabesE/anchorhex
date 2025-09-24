@@ -80,17 +80,19 @@ export function bfsFromBase(
   vis[br][bc] = true;
   q.push([br, bc]);
   const base = playerBase(player);
-  while (q.length) {
-    const [r, c] = q.shift()!;
+  const stone = playerStone(player);
+  let qi = 0;
+  while (qi < q.length) {
+    const [r, c] = q[qi++];
     for (const [nr, nc] of neighbors(r, c)) {
       if (vis[nr][nc]) continue;
       const v = board[nr][nc];
       if (mode === "stones+empties") {
-        if (v === EMPTY || v === base || v === playerStone(player)) {
+        if (v === EMPTY || v === base || v === stone) {
           vis[nr][nc] = true;
           q.push([nr, nc]);
         }
-      } else if (mode === "emptiesOnly") {
+      } else {
         if (v === EMPTY) {
           vis[nr][nc] = true;
           q.push([nr, nc]);
@@ -109,31 +111,24 @@ export function computeLegalMoves(
   const reach = bfsFromBase(board, player, "stones+empties");
   const legal = reach.map((row, r) => row.map((ok, c) => ok && board[r][c] === EMPTY));
 
-  // Allow capture-based placements: if a move is not reachable now but
-  // after placing and resolving captures the placed stone survives
-  // (i.e., remains connected to its base), then it is legal.
   const myStone = playerStone(player);
+  const forbid = opts?.forbidPositions;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       if (board[r][c] !== EMPTY) continue;
-      if (!legal[r][c]) {
+
+      let isLegal = legal[r][c];
+      let after: Cell[][] | null = null;
+
+      if (!isLegal || forbid) {
         const tmp = cloneBoard(board);
         tmp[r][c] = myStone;
-        const after = resolveCaptures(tmp);
-        if (after[r][c] === myStone) {
-          legal[r][c] = true;
-        }
+        after = resolveCaptures(tmp);
+        if (!isLegal) isLegal = after[r][c] === myStone;
+        if (isLegal && forbid && forbid.has(boardHash(after))) isLegal = false;
       }
 
-      // Superko filter: if resulting board equals a forbidden position, mark illegal
-      if (legal[r][c] && opts?.forbidPositions) {
-        const tmp2 = cloneBoard(board);
-        tmp2[r][c] = myStone;
-        const after2 = resolveCaptures(tmp2);
-        if (opts.forbidPositions.has(boardHash(after2))) {
-          legal[r][c] = false;
-        }
-      }
+      legal[r][c] = isLegal;
     }
   }
 
@@ -141,12 +136,13 @@ export function computeLegalMoves(
 }
 
 export function boardHash(board: Cell[][]): string {
-  let out = "";
+  const parts: string[] = new Array(ROWS);
   for (let r = 0; r < ROWS; r++) {
-    if (r) out += "|";
-    for (let c = 0; c < COLS; c++) out += board[r][c];
+    let rowStr = "";
+    for (let c = 0; c < COLS; c++) rowStr += board[r][c];
+    parts[r] = rowStr;
   }
-  return out;
+  return parts.join("|");
 }
 
 export function resolveCaptures(board: Cell[][]): Cell[][] {
@@ -203,7 +199,9 @@ export function placeStone(
   opts?: { forbidPositions?: ReadonlySet<string> },
 ) {
   if (board[r][c] !== EMPTY) return null;
-  const legal = computeLegalMoves(board, player);
+  const legal = computeLegalMoves(board, player, {
+    forbidPositions: opts?.forbidPositions,
+  });
   if (!legal[r][c]) return null;
   const next = cloneBoard(board);
   next[r][c] = playerStone(player);

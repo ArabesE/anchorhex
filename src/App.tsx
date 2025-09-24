@@ -19,9 +19,9 @@ import {
 /**
  * AnchorHex — a hex-board connection game
  * Rules implemented from user spec:
- * - Board: 10x10 flat-top hex grid in even-q offset (columns aligned vertically; rows appear zig-zag).
+ * - Board: 8x8 flat-top hex grid in even-q offset (columns aligned vertically; rows appear zig-zag).
  * - Two players: Black and White; Black moves first.
- * - Bases: White base at (row 0, col 4), Black base at (row 9, col 5) — 0-indexed.
+ * - Bases: White base at (row 0, col 4), Black base at (row 7, col 3) — 0-indexed.
  * - A move: place a stone of current player on any EMPTY cell that can SURVIVE.
  *   "Can survive" ⇢ the cell is connected to that player's base via a path consisting only of that player's stones and empty cells.
  * - After each move, remove all DEAD stones for BOTH sides.
