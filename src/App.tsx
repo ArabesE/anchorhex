@@ -11,7 +11,6 @@ import {
   computeLegalMoves,
   bfsFromBase,
   computeAreaScore,
-  bothNoMoves,
   cloneBoard,
   boardHash,
   placeStone,
@@ -153,6 +152,23 @@ export default function App() {
     setGameOver(false);
   }, []);
 
+  const onPass = useCallback(() => {
+    if (gameOver) return;
+    if (anyLegal) return; // cannot pass if you have legal moves
+    pushHistory();
+    const nextPlayer: Player = player === "WHITE" ? "BLACK" : "WHITE";
+    const oppMask = computeLegalMoves(board, nextPlayer, { forbidPositions: forbidSet });
+    const oppAny = oppMask.some((row) => row.some(Boolean));
+    // Record pass in move counter and history; board unchanged
+    setMove((m) => m + 1);
+    setPositionHistory((ph) => [...ph, boardHash(board)]);
+    if (!oppAny) {
+      setGameOver(true);
+      return;
+    }
+    setPlayer(nextPlayer);
+  }, [board, player, anyLegal, forbidSet, gameOver, pushHistory]);
+
   const undo = useCallback(() => {
     setHistory((h) => {
       const last = h[h.length - 1];
@@ -186,11 +202,16 @@ export default function App() {
       setMove((m) => m + 1);
       setPositionHistory((ph) => [...ph, boardHash(resolved)]);
 
-      // Check end condition after state updates (microtask)
-      setTimeout(() => {
-        const ended = bothNoMoves(resolved);
-        if (ended) setGameOver(true);
-      }, 0);
+      // After move, end if neither side has any legal move (no auto-pass)
+      const nextForbid = new Set(forbidSet);
+      nextForbid.add(boardHash(resolved));
+      const wAny = computeLegalMoves(resolved, "WHITE", {
+        forbidPositions: nextForbid,
+      }).some((row) => row.some(Boolean));
+      const bAny = computeLegalMoves(resolved, "BLACK", {
+        forbidPositions: nextForbid,
+      }).some((row) => row.some(Boolean));
+      if (!wAny && !bAny) setGameOver(true);
     },
     [board, player, legalMask, pushHistory, gameOver, forbidSet],
   );
@@ -214,6 +235,8 @@ export default function App() {
     return `Game Over — Draw ${white} : ${black}`;
   }, [gameOver, areaScore]);
 
+  const canPass = useMemo(() => !anyLegal && !gameOver, [anyLegal, gameOver]);
+
   return (
     <div className="min-h-screen w-full bg-neutral-100 text-neutral-900 flex flex-col items-center py-6">
       <div className="w-full max-w-5xl px-4">
@@ -223,14 +246,26 @@ export default function App() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              className="px-3 py-1.5 rounded-xl bg-neutral-900 text-white hover:opacity-90"
+              className={
+                canPass
+                  ? "px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                  : "px-3 py-1.5 rounded-xl bg-neutral-200 text-neutral-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              }
+              onClick={onPass}
+              disabled={!canPass}
+              title={anyLegal ? "You have legal moves" : "Pass (no legal moves)"}
+            >
+              Pass
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-xl bg-neutral-700 text-white hover:bg-neutral-800 shadow-sm"
               onClick={undo}
               title="Undo (U)"
             >
               Undo
             </button>
             <button
-              className="px-3 py-1.5 rounded-xl bg-neutral-200 hover:bg-neutral-300"
+              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
               onClick={onRestart}
               title="Restart (R)"
             >
